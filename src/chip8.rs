@@ -1,17 +1,23 @@
 
+const MEMORY_SIZE: usize = 4096;
+const VREGISTER_COUNT: usize = 16;
+const GFX_SIZE: usize = 64 * 32;
+const STACK_SIZE: usize = 16;
+const KEY_SIZE: usize = 16;
+
 pub struct Chip8 {
     opcode: u16,
-    memory: [u8;4096],
-    v: [u8;16],
+    memory: [u8;MEMORY_SIZE],
+    v: [u8;VREGISTER_COUNT],
     i: i16,
     pc: u16,
-    gfx: [u8;64 * 32],
+    gfx: [u8;GFX_SIZE],
     draw_sema: bool,
     delay_timer: u8,
     sound_timer: u8,
-    stack: [u8;16],
+    stack: [u8;STACK_SIZE],
     sp: u8,
-    key: [u8;16]
+    key: [u8;KEY_SIZE]
 }
 
 
@@ -20,17 +26,17 @@ impl Chip8 {
     pub fn origin() -> Chip8 {
         Chip8 {
             opcode: 0x0000,
-            memory: [0;4096],
-            v: [0;16],
+            memory: [0;MEMORY_SIZE],
+            v: [0;VREGISTER_COUNT],
             i: 0x0000,
             pc: 0x0000,
-            gfx: [0;64 * 32],
+            gfx: [0;GFX_SIZE],
             draw_sema: false,
             delay_timer: 0x00,
             sound_timer: 0x00,
-            stack: [0;16],
+            stack: [0;STACK_SIZE],
             sp: 0,
-            key: [0;16],
+            key: [0;KEY_SIZE],
         }
     }
 
@@ -66,7 +72,7 @@ impl Chip8 {
 
         // Load fontset
         for i in 0..80 {
-            self.memory[i] = CHIP8_FONTSET[i];
+            self.memory[i + 80] = CHIP8_FONTSET[i];
         }
 
 
@@ -104,7 +110,9 @@ impl Chip8 {
             }
 
             _ => {
-                println!("opcode not found!");
+                println!("opcode: {:#x?} not found!", self.opcode);
+                // for debugging before all opcodes are implemented
+                self.pc += 2;
             }
         }
     }
