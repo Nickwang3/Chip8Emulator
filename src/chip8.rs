@@ -17,7 +17,7 @@ pub struct Chip8 {
     draw_sema: bool,
     delay_timer: u8,
     sound_timer: u8,
-    stack: [u8;STACK_SIZE],
+    stack: [u16;STACK_SIZE],
     sp: u8,
     key: [u8;KEY_SIZE]
 }
@@ -130,16 +130,18 @@ impl Chip8 {
                 self.pc = self.opcode & 0x0FFF;
             }
 
-            // 0x2000 => {
-            //     //2NNN
-            //     //Calls subroutine at NNN.
-                
-            // }
+            0x2000 => {
+                //2NNN
+                //Calls subroutine at NNN.
+                self.stack[self.sp as usize] = self.pc;
+                self.sp += 1;
+                self.pc = self.opcode & 0x0FFF;
+            }
 
             0x3000 => {
                 //3XNN
                 //Skips the next instruction if VX equals NN.
-                let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
                 let reg_value: u8 = self.v[x];
                 let comp_value: u8 = (self.opcode & 0x00FF) as u8;
                 if reg_value == comp_value {
@@ -152,7 +154,7 @@ impl Chip8 {
             0x4000 => {
                 //4XNN
                 //Skips the next instruction if VX doesn't equal NN.
-                let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
                 let reg_value: u8 = self.v[x];
                 let comp_value: u8 = (self.opcode & 0x00FF) as u8;
                 if reg_value != comp_value {
@@ -165,8 +167,8 @@ impl Chip8 {
             0x5000 => {
                 //5XY0
                 //Skips the next instruction if VX equals VY.
-                let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
-                let y: usize = ((self.opcode & 0x00F0) >> 1) as usize;
+                let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                let y: usize = ((self.opcode & 0x00F0) >> 4) as usize;
                 if self.v[x] == self.v[y] {
                     self.pc += 4;
                 } else {
@@ -177,7 +179,7 @@ impl Chip8 {
             0x6000 => {
                 //6XNN
                 //Sets VX to NN.
-                let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
                 self.v[x] = (self.opcode & 0x00FF) as u8;
                 self.pc += 2;
             }
@@ -185,7 +187,7 @@ impl Chip8 {
             0x7000 => {
                 //7XNN
                 //Adds NN to VX.
-                let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
                 self.v[x] += (self.opcode & 0x00FF) as u8;
                 self.pc += 2;
             }
@@ -196,8 +198,8 @@ impl Chip8 {
                     0x0000 => {
                         //8XY0
                         //Sets VX to the value of VY.
-                        let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
-                        let y: usize = ((self.opcode & 0x00F0) >> 1) as usize;
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        let y: usize = ((self.opcode & 0x00F0) >> 4) as usize;
                         self.v[x] = self.v[y];
                         self.pc += 2;
                     }
@@ -205,8 +207,8 @@ impl Chip8 {
                     0x0001 => {
                         //8XY1
                         //Sets VX to VX or VY
-                        let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
-                        let y: usize = ((self.opcode & 0x00F0) >> 1) as usize;
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        let y: usize = ((self.opcode & 0x00F0) >> 4) as usize;
                         self.v[x] = self.v[x] | self.v[y];
                         self.pc += 2;
                     }
@@ -214,8 +216,8 @@ impl Chip8 {
                     0x0002 => {
                         //8XY2
                         //Sets VX to VX and VY.
-                        let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
-                        let y: usize = ((self.opcode & 0x00F0) >> 1) as usize;
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        let y: usize = ((self.opcode & 0x00F0) >> 4) as usize;
                         self.v[x] = self.v[x] & self.v[y];
                         self.pc += 2;
                     }
@@ -223,8 +225,8 @@ impl Chip8 {
                     0x0003 => {
                         //8XY3
                         //Sets VX to VX xor VY.
-                        let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
-                        let y: usize = ((self.opcode & 0x00F0) >> 1) as usize;
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        let y: usize = ((self.opcode & 0x00F0) >> 4) as usize;
                         self.v[x] = self.v[x] ^ self.v[y];
                         self.pc += 2;
                     }
@@ -232,7 +234,18 @@ impl Chip8 {
                     0x0004 => {
                         //8XY4
                         //Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
-                        
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        let y: usize = ((self.opcode & 0x00F0) >> 4) as usize;
+                        match self.v[x].checked_add(self.v[y]) {
+                            Some(_result) => {
+                                self.v[VREGISTER_COUNT - 1] = 0;
+                            }
+                            None => {
+                                self.v[VREGISTER_COUNT - 1] = 1;
+                            }
+                        }
+                        self.v[x] += self.v[y];
+                        self.pc += 2;
                     }
 
                     _=> {
