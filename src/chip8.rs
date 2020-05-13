@@ -1,4 +1,6 @@
 
+use std::vec::Vec;
+
 const MEMORY_SIZE: usize = 4096;
 const VREGISTER_COUNT: usize = 16;
 const GFX_SIZE: usize = 64 * 32;
@@ -51,27 +53,27 @@ impl Chip8 {
 
 
         // Clear display
-        for i in 0..(64 * 32) {
+        for i in 0..GFX_SIZE {
             self.gfx[i] = 0x00;
         }
 
         // Clear stack
-        for i in 0..16 {
+        for i in 0..STACK_SIZE {
             self.stack[i] = 0x00;
         }
 
         // Clear registers V0-VF
-        for i in 0..16 {
+        for i in 0..VREGISTER_COUNT {
             self.v[i] = 0x00;
         }
 
         // Clear memory
-        for i in 0..4096 {
+        for i in 0..MEMORY_SIZE {
             self.memory[i] = 0x00;
         }
 
         // Load fontset
-        for i in 0..80 {
+        for i in 0..FONTSET_SIZE {
             self.memory[i + 80] = CHIP8_FONTSET[i];
         }
 
@@ -84,11 +86,20 @@ impl Chip8 {
     */
     pub fn load(&mut self) {
 
-        // buffer is program to be loaded (hard coded right now)
-        let buffer: [u8; 1000] = [0;1000];
-        let buffer_size = 1000;
+        let path_to_program: String = String::from("src/programs/TETRIS");
 
-        for i in 0..buffer_size {
+        let buffer: Vec<u8>;
+        
+        match std::fs::read(&path_to_program) {
+            Ok(bytes) => {
+                buffer = bytes;
+            }
+            Err(e) => {
+                panic!("Failed to read file: {}, {}", path_to_program, e);
+            }
+        }
+
+        for i in 0..buffer.len() {
             self.memory[i + 512] = buffer[i];
         }
 
@@ -120,7 +131,7 @@ impl Chip8 {
 }
 
 
-
+const FONTSET_SIZE: usize = 80;
 const CHIP8_FONTSET: [u8;80] =
 [
   0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
