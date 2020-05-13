@@ -190,8 +190,57 @@ impl Chip8 {
                 self.pc += 2;
             }
 
-            // 0x8000 => {
-            // }
+            0x8000 => {
+                match self.opcode & 0x000F {
+
+                    0x0000 => {
+                        //8XY0
+                        //Sets VX to the value of VY.
+                        let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                        let y: usize = ((self.opcode & 0x00F0) >> 1) as usize;
+                        self.v[x] = self.v[y];
+                        self.pc += 2;
+                    }
+
+                    0x0001 => {
+                        //8XY1
+                        //Sets VX to VX or VY
+                        let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                        let y: usize = ((self.opcode & 0x00F0) >> 1) as usize;
+                        self.v[x] = self.v[x] | self.v[y];
+                        self.pc += 2;
+                    }
+
+                    0x0002 => {
+                        //8XY2
+                        //Sets VX to VX and VY.
+                        let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                        let y: usize = ((self.opcode & 0x00F0) >> 1) as usize;
+                        self.v[x] = self.v[x] & self.v[y];
+                        self.pc += 2;
+                    }
+
+                    0x0003 => {
+                        //8XY3
+                        //Sets VX to VX xor VY.
+                        let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                        let y: usize = ((self.opcode & 0x00F0) >> 1) as usize;
+                        self.v[x] = self.v[x] ^ self.v[y];
+                        self.pc += 2;
+                    }
+
+                    0x0004 => {
+                        //8XY4
+                        //Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
+                        
+                    }
+
+                    _=> {
+                        println!("opcode: {:#x?} not found!", self.opcode);
+                        self.pc += 2;
+                    }
+                }
+            }
 
 
             0xA000 => {
