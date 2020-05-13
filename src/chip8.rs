@@ -110,15 +110,104 @@ impl Chip8 {
         Emulate cpu cycle by fetching, decoding, executing opcode
     */
     pub fn emulate_cycle(&mut self) {
+
+        //for debugging
+        println!("pc: {}", self.pc);
+
         // fetch opcode by combining two consecutive addresses in memory
         self.opcode = (self.memory[self.pc as usize] as u16) << 8 | (self.memory[(self.pc + 1) as usize] as u16);
 
-        // decode opcode
+        // decode opcode (TODO: CLEAN UP UGLY SWITCH STATEMENT)
         match self.opcode & 0xF000 {
+
+            // 0x0000 => {
+                
+            // }
+
+            0x1000 => {
+                //1NNN
+                //Jumps to address NNN.
+                self.pc = self.opcode & 0x0FFF;
+            }
+
+            // 0x2000 => {
+            //     //2NNN
+            //     //Calls subroutine at NNN.
+                
+            // }
+
+            0x3000 => {
+                //3XNN
+                //Skips the next instruction if VX equals NN.
+                let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                let reg_value: u8 = self.v[x];
+                let comp_value: u8 = (self.opcode & 0x00FF) as u8;
+                if reg_value == comp_value {
+                    self.pc += 4;
+                } else {
+                    self.pc += 2;
+                }
+            }
+
+            0x4000 => {
+                //4XNN
+                //Skips the next instruction if VX doesn't equal NN.
+                let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                let reg_value: u8 = self.v[x];
+                let comp_value: u8 = (self.opcode & 0x00FF) as u8;
+                if reg_value != comp_value {
+                    self.pc += 4;
+                } else {
+                    self.pc += 2;
+                }
+            }
+
+            0x5000 => {
+                //5XY0
+                //Skips the next instruction if VX equals VY.
+                let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                let y: usize = ((self.opcode & 0x00F0) >> 1) as usize;
+                if self.v[x] == self.v[y] {
+                    self.pc += 4;
+                } else {
+                    self.pc += 2;
+                }
+            }
+
+            0x6000 => {
+                //6XNN
+                //Sets VX to NN.
+                let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                self.v[x] = (self.opcode & 0x00FF) as u8;
+                self.pc += 2;
+            }
+
+            0x7000 => {
+                //7XNN
+                //Adds NN to VX.
+                let x: usize = ((self.opcode & 0x0F00) >> 2) as usize;
+                self.v[x] += (self.opcode & 0x00FF) as u8;
+                self.pc += 2;
+            }
+
+            // 0x8000 => {
+            // }
+
+
             0xA000 => {
+                //ANNN
+                //Sets I to the addresss NNN
                 self.i = (self.opcode & 0x0FFF) as i16;
                 self.pc += 2;
             }
+
+            0xB000 => {
+                //BNNN
+                //Jumps to the address NNN plus V0
+                self.pc = (self.v[0] as u16) + (self.opcode & 0x0FFF);
+            }
+
+
 
             _ => {
                 println!("opcode: {:#x?} not found!", self.opcode);
