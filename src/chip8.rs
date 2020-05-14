@@ -1,6 +1,9 @@
 
 use std::vec::Vec;
 
+extern crate rand;
+use rand::Rng;
+
 const MEMORY_SIZE: usize = 4096;
 const VREGISTER_COUNT: usize = 16;
 const GFX_SIZE: usize = 64 * 32;
@@ -114,11 +117,11 @@ impl Chip8 {
         //to slow down cycles for now
         std::thread::sleep(std::time::Duration::from_millis(100));
 
-        //for debugging
-        println!("pc: {}, opcode: {:#x}", self.pc, self.opcode);
-
         // fetch opcode by combining two consecutive addresses in memory
         self.opcode = (self.memory[self.pc as usize] as u16) << 8 | (self.memory[(self.pc + 1) as usize] as u16);
+
+        //for debugging
+        println!("pc: {}, opcode: {:#x}", self.pc, self.opcode);
 
         // decode opcode (TODO: CLEAN UP UGLY SWITCH STATEMENT)
         match self.opcode & 0xF000 {
@@ -129,11 +132,11 @@ impl Chip8 {
                         todo!();
                     }
 
-                    0x0EE => {
+                    0x00EE => {
                         //00EE
                         //Returns from a subroutine.
                         self.sp -= 1;
-                        self.pc = self.stack[self.sp as usize];
+                        self.pc = self.stack[self.sp as usize] + 2;
                     }
 
                     _=> {
@@ -350,7 +353,32 @@ impl Chip8 {
                 self.pc = (self.v[0] as u16) + (self.opcode & 0x0FFF);
             }
 
+            0xC000 => {
+                //CXNN
+                //Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN. 
+                let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                let random_num: u8 = rand::thread_rng().gen();
+                self.v[x] &= ((self.opcode & 0x00FF) as u8) & random_num;
+            }
 
+            0xD000 => {
+                //DXYN 
+                //Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels. Each row of 8 pixels is read as 
+                //bit-coded starting from memory location I; I value doesn't change after the execution of this instruction. As described
+                //above, VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn,
+                //and to 0 if that doesn't happen
+                todo!();
+            }
+
+            0xE000 => {
+                //Key Ops
+                todo!();
+            }
+
+            0xF000 => {
+                //Timer and Mem Ops
+                todo!();
+            }
 
             _ => {
                 println!("opcode: {:#x?} not found!", self.opcode);
