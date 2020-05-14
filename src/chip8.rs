@@ -110,9 +110,12 @@ impl Chip8 {
         Emulate cpu cycle by fetching, decoding, executing opcode
     */
     pub fn emulate_cycle(&mut self) {
+        
+        //to slow down cycles for now
+        std::thread::sleep(std::time::Duration::from_millis(100));
 
         //for debugging
-        println!("pc: {}", self.pc);
+        println!("pc: {}, opcode: {:#x}", self.pc, self.opcode);
 
         // fetch opcode by combining two consecutive addresses in memory
         self.opcode = (self.memory[self.pc as usize] as u16) << 8 | (self.memory[(self.pc + 1) as usize] as u16);
@@ -120,9 +123,26 @@ impl Chip8 {
         // decode opcode (TODO: CLEAN UP UGLY SWITCH STATEMENT)
         match self.opcode & 0xF000 {
 
-            // 0x0000 => {
-                
-            // }
+            0x0000 => {
+                match self.opcode & 0x0FFF {
+                    0x00E0 => {
+                        todo!();
+                    }
+
+                    0x0EE => {
+                        //00EE
+                        //Returns from a subroutine.
+                        self.sp -= 1;
+                        self.pc = self.stack[self.sp as usize];
+                    }
+
+                    _=> {
+                        //0NNN
+                        //Calls RCA 1802 program at address NNN. Not necessary for most ROMs.
+                        unimplemented!();
+                    }
+                }
+            }
 
             0x1000 => {
                 //1NNN
@@ -248,6 +268,56 @@ impl Chip8 {
                         self.pc += 2;
                     }
 
+                    0x0005 => {
+                        //8XY5
+                        //VY is subtraced from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        let y: usize = ((self.opcode & 0x00F0) >> 4) as usize;
+                        match self.v[x].checked_sub(self.v[y]) {
+                            Some(_result) => {
+                                self.v[VREGISTER_COUNT - 1] = 1;
+                            }
+                            None => {
+                                self.v[VREGISTER_COUNT - 1] = 0;
+                            }
+                        }
+                        self.v[x] += self.v[y];
+                        self.pc += 2;
+                    }
+
+                    0x0006 => {
+                        //8XY6
+                        //Stores the least significant bit of VX in VF and then shifts VX to the right by 1.
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        self.v[VREGISTER_COUNT - 1] = self.v[x] & 0x01;
+                        self.v[x] >>= 1;
+                    }
+
+                    0x0007 => {
+                        //8XY7
+                        //Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        let y: usize = ((self.opcode & 0x00F0) >> 4) as usize;
+                        match self.v[y].checked_sub(self.v[x]) {
+                            Some(_result) => {
+                                self.v[VREGISTER_COUNT - 1] = 1;
+                            }
+                            None => {
+                                self.v[VREGISTER_COUNT - 1] = 0;
+                            }
+                        }
+                        self.v[x] = self.v[y] - self.v[x];
+                        self.pc += 2;
+                    }
+
+                    0x000E => {
+                        //8XYE
+                        //Stores the most significant bit of VX in VF and then shifts VX to the left by 1.
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        self.v[VREGISTER_COUNT - 1] = (self.v[x] & 0x80) >> 7;
+                        self.v[x] <<= 1;
+                    }
+
                     _=> {
                         println!("opcode: {:#x?} not found!", self.opcode);
                         self.pc += 2;
@@ -255,6 +325,17 @@ impl Chip8 {
                 }
             }
 
+            0x9000 => {
+                //9XY0
+                //Skips the next instruction if VX doesn't equal VY. 
+                let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                let y: usize = ((self.opcode & 0x00F0) >> 4) as usize;
+                if self.v[x] != self.v[y] {
+                    self.pc += 4;
+                } else {
+                    self.pc += 2;
+                }
+            }
 
             0xA000 => {
                 //ANNN
