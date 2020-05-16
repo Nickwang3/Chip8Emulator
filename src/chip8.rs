@@ -377,7 +377,25 @@ impl Chip8 {
 
             0xF000 => {
                 //Timer and Mem Ops
-                todo!();
+                match self.opcode & 0x00FF {
+
+                    0x0007 => {
+                        //FX07
+                        //Sets VX to the value of the delay timer. 
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        self.v[x] = self.delay_timer;
+                    }
+
+                    0x000A => {
+                        //FX0A
+                        //A key press is awaited, and the stored in VX. (Blocking Operation)
+                        
+                    }
+
+                    _=> {
+                        println!("opcode: {:#x?} not found!", self.opcode);
+                    }
+                }
             }
 
             _ => {
