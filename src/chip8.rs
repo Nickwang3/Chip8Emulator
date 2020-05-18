@@ -129,7 +129,8 @@ impl Chip8 {
             0x0000 => {
                 match self.opcode & 0x0FFF {
                     0x00E0 => {
-                        todo!();
+                        // todo!();
+                        self.pc += 2;
                     }
 
                     0x00EE => {
@@ -485,7 +486,7 @@ impl Chip8 {
             self.delay_timer -= 1;
         }
         if self.sound_timer > 0 {
-            self.delay_timer -= 1;
+            self.sound_timer -= 1;
         }
     }
 
