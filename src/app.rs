@@ -1,75 +1,57 @@
 
-extern crate glutin_window;
-extern crate graphics;
-extern crate opengl_graphics;
-extern crate piston;
+extern crate sdl2;
 
-use glutin_window::GlutinWindow as Window;
-use opengl_graphics::{GlGraphics, OpenGL};
-use piston::event_loop::{EventSettings, Events};
-use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
-use piston::window::WindowSettings;
+use sdl2::video::Window;
+use sdl2::render::Canvas;
+use sdl2::pixels::Color;
+use sdl2::rect::Rect;
 
 pub struct App {
-    gl: GlGraphics,
-    rotation: f64,
-    gfx: [u8;2048],
+    canvas: Canvas<Window>,
+    gfx: [u8;2048]
 }
 
 impl App {
-    fn render(&mut self, args: &RenderArgs) {
-        use graphics::*;
 
-        let square = rectangle::square(0.0, 0.0, 50.0);
-        let rotation = self.rotation;
-        let (x, y) = (args.window_size[0] / 2.0, args.window_size[1] / 2.0);
+    pub fn new() -> App {
+        let sdl = sdl2::init().unwrap();
+        let video_subsystem = sdl.video().unwrap();
+        let window = video_subsystem
+            .window("chip-8-window", 640, 320)
+            .build()
+            .unwrap();
 
-        self.gl.draw(args.viewport(), |c, gl| {
-            // Clear the screen.
-            clear(color::BLACK, gl);
+        let mut canvas = window.into_canvas().present_vsync().build().unwrap();
+        canvas.set_draw_color(Color::BLACK);
+        canvas.clear();
 
-            let transform = c
-                .transform
-                .trans(x, y)
-                .rot_rad(rotation)
-                .trans(-25.0, -25.0);
-
-            // Draw a box rotating around the middle of the screen.
-            rectangle(color::WHITE, square, transform, gl);
-        });
-    }
-
-    fn update(&mut self, args: &UpdateArgs) {
-        // Rotate 2 radians per second.
-        self.rotation += 2.0 * args.dt;
-    }
-}
-
-pub fn display(gfx: &[u8;2048]) {
-    let opengl = OpenGL::V3_2;
-
-    // Create an Glutin window.
-    let mut window: Window = WindowSettings::new("chip-8-window", [640, 320])
-        .graphics_api(opengl)
-        .exit_on_esc(true)
-        .build()
-        .unwrap();
-
-    // Create a new game and run it.
-    let mut app = App {
-        gl: GlGraphics::new(opengl),
-        rotation: 0.0,
-        gfx: *gfx
-    };
-
-    let mut events = Events::new(EventSettings::new());
-    while let Some(e) = events.next(&mut window) {
-        if let Some(args) = e.render_args() {
-            app.render(&args);
+        App {
+            canvas: canvas,
+            gfx: [0;2048]
         }
 
-        if let Some(args) = e.update_args() {
-            app.update(&args);
+    }
+
+    pub fn render(&mut self) {
+        // use graphics::*;
+        self.canvas.set_draw_color(Color::BLACK);
+        self.canvas.clear();
+
+        self.canvas.set_draw_color(Color::WHITE);
+
+        for y_coord in 0..32 {
+            for x_coord in 0..64 {
+                if self.gfx[x_coord + (y_coord * 64)] == 1 {
+                    self.canvas.fill_rect(Rect::new((x_coord * 10) as i32, (y_coord * 10) as i32, 10, 10));
+                }
+            }
         }
+
+        self.canvas.present();
+
+    }
+
+    pub fn update(&mut self, gfx: &[u8;2048]) {
+        self.gfx = *gfx;
     }
 }

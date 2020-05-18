@@ -28,7 +28,7 @@ pub struct Chip8 {
 
 impl Chip8 {
 
-    pub fn origin() -> Chip8 {
+    pub fn new() -> Chip8 {
         Chip8 {
             opcode: 0x0000,
             memory: [0;MEMORY_SIZE],
