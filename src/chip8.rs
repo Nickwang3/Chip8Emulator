@@ -89,7 +89,7 @@ impl Chip8 {
     */
     pub fn load(&mut self) {
 
-        let path_to_program: String = String::from("src/programs/TETRIS");
+        let path_to_program: String = String::from("src/programs/PONG");
 
         let buffer: Vec<u8>;
         
@@ -294,6 +294,7 @@ impl Chip8 {
                         let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
                         self.v[VREGISTER_COUNT - 1] = self.v[x] & 0x01;
                         self.v[x] >>= 1;
+                        self.pc += 2;
                     }
 
                     0x0007 => {
@@ -319,6 +320,7 @@ impl Chip8 {
                         let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
                         self.v[VREGISTER_COUNT - 1] = (self.v[x] & 0x80) >> 7;
                         self.v[x] <<= 1;
+                        self.pc += 2;
                     }
 
                     _=> {
@@ -359,6 +361,7 @@ impl Chip8 {
                 let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
                 let random_num: u8 = rand::thread_rng().gen();
                 self.v[x] &= ((self.opcode & 0x00FF) as u8) & random_num;
+                self.pc += 2;
             }
 
             0xD000 => {
@@ -391,7 +394,7 @@ impl Chip8 {
 
             0xE000 => {
                 //Key Ops
-                todo!();
+                self.pc += 2;
             }
 
             0xF000 => {
@@ -403,12 +406,61 @@ impl Chip8 {
                         //Sets VX to the value of the delay timer. 
                         let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
                         self.v[x] = self.delay_timer;
+                        self.pc += 2;
                     }
 
                     0x000A => {
                         //FX0A
                         //A key press is awaited, and the stored in VX. (Blocking Operation)
-                        
+                        self.pc += 2;
+                    }
+
+                    0x0015 => {
+                        //FX15
+                        //Sets the delay timer to VX. 
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        self.delay_timer = self.v[x];
+                        self.pc += 2;
+                    }
+
+                    0x0018 => {
+                        //FX18
+                        //Sets the sound timer to VX. 
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        self.sound_timer = self.v[x];
+                        self.pc += 2;
+                    }
+
+                    0x001E => {
+                        //FX1E
+                        //Adds VX to I. VF is set to 1 when there is a range overflow, and to 0 when there isn't. 
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        match self.i.checked_add(self.v[x] as i16) {
+                            Some(_result) => {
+                                self.v[VREGISTER_COUNT - 1] = 0;
+                            }
+                            None => {
+                                self.v[VREGISTER_COUNT - 1] = 1;
+                            }
+                        }
+                        self.i += self.v[x] as i16;
+                        self.pc += 2;
+                    }
+
+                    0x0029 => {
+                        self.pc += 2;
+                    }
+
+                    0x0033 => {
+                        self.pc += 2;
+                    }
+
+                    0x0055 => {
+                        self.pc += 2;
+                    }
+
+                    0x0065 => {
+                        self.pc += 2;
                     }
 
                     _=> {
@@ -422,6 +474,13 @@ impl Chip8 {
                 // for debugging before all opcodes are implemented
                 self.pc += 2;
             }
+        }
+
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+        if self.sound_timer > 0 {
+            self.delay_timer -= 1;
         }
     }
 
