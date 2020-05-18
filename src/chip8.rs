@@ -115,7 +115,7 @@ impl Chip8 {
     pub fn emulate_cycle(&mut self) {
         
         //to slow down cycles for now
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(40));
 
         // fetch opcode by combining two consecutive addresses in memory
         self.opcode = (self.memory[self.pc as usize] as u16) << 8 | (self.memory[(self.pc + 1) as usize] as u16);
@@ -211,7 +211,8 @@ impl Chip8 {
                 //7XNN
                 //Adds NN to VX.
                 let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
-                self.v[x] += (self.opcode & 0x00FF) as u8;
+                // self.v[x] += (self.opcode & 0x00FF) as u8;
+                self.v[x] = self.v[x].wrapping_add((self.opcode & 0x00FF) as u8);
                 self.pc += 2;
             }
 
@@ -267,7 +268,8 @@ impl Chip8 {
                                 self.v[VREGISTER_COUNT - 1] = 1;
                             }
                         }
-                        self.v[x] += self.v[y];
+                        // self.v[x] += self.v[y];
+                        self.v[x] = self.v[x].wrapping_add(self.v[y]);
                         self.pc += 2;
                     }
 
@@ -284,7 +286,8 @@ impl Chip8 {
                                 self.v[VREGISTER_COUNT - 1] = 0;
                             }
                         }
-                        self.v[x] += self.v[y];
+                        // self.v[x] += self.v[y];
+                        self.v[x] = self.v[x].wrapping_add(self.v[y]);
                         self.pc += 2;
                     }
 
@@ -310,7 +313,8 @@ impl Chip8 {
                                 self.v[VREGISTER_COUNT - 1] = 0;
                             }
                         }
-                        self.v[x] = self.v[y] - self.v[x];
+                        // self.v[x] = self.v[y] - self.v[x];
+                        self.v[x] = self.v[y].wrapping_sub(self.v[x]);
                         self.pc += 2;
                     }
 
@@ -443,7 +447,8 @@ impl Chip8 {
                                 self.v[VREGISTER_COUNT - 1] = 1;
                             }
                         }
-                        self.i += self.v[x] as i16;
+                        // self.i += self.v[x] as i16;
+                        self.i = self.i.wrapping_add(self.v[x] as i16);
                         self.pc += 2;
                     }
 
