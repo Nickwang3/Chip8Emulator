@@ -4,15 +4,19 @@ mod app;
 
 fn main() {
 
-    app::display();
-
-    // let mut cpu = chip8::Chip8::origin();
-    // cpu.initialize();
-    // cpu.load();
+    let mut cpu = chip8::Chip8::origin();
+    cpu.initialize();
+    cpu.load();
 
 
-    // loop {
-    //     cpu.emulate_cycle();
-    // }
+    loop {
+        cpu.emulate_cycle();
+
+        app::display(&cpu.get_gfx());
+
+        // if (cpu.check_draw_sema()) {
+        //     app::display(&cpu.get_gfx());
+        // }
+    }
 
 }

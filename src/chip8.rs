@@ -367,7 +367,26 @@ impl Chip8 {
                 //bit-coded starting from memory location I; I value doesn't change after the execution of this instruction. As described
                 //above, VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn,
                 //and to 0 if that doesn't happen
-                todo!();
+                let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                let y: usize = ((self.opcode & 0x00F0) >> 4) as usize;
+                let height: usize = (self.opcode & 0x000F) as usize;
+
+                self.v[VREGISTER_COUNT - 1] = 0;
+                for y_coord in 0..height {
+                    let pixel: u8 = self.memory[(self.i + (y_coord as i16)) as usize];
+                    for x_coord in 0..8 {
+                        let gfx_index: usize = x + x_coord + ((y + y_coord) * 64);
+                        if (pixel & (0x80 >> x_coord)) != 0 {
+                            if self.gfx[gfx_index] == 1 {
+                                self.v[VREGISTER_COUNT - 1] = 1;
+                            }
+                            self.gfx[gfx_index] ^= 1;
+                        }
+                    }
+                }
+
+                self.draw_sema = true;
+                self.pc += 2;
             }
 
             0xE000 => {
@@ -404,6 +423,18 @@ impl Chip8 {
                 self.pc += 2;
             }
         }
+    }
+
+    pub fn get_gfx(&self) -> [u8;GFX_SIZE] {
+        self.gfx
+    }
+    
+    pub fn check_draw_sema(&mut self) -> bool {
+        if self.draw_sema == true {
+            self.draw_sema = false;
+            return true
+        }
+        false
     }
 
 }
