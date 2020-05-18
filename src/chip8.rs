@@ -89,7 +89,7 @@ impl Chip8 {
     */
     pub fn load(&mut self) {
 
-        let path_to_program: String = String::from("src/programs/PONG2");
+        let path_to_program: String = String::from("src/programs/INVADERS");
 
         let buffer: Vec<u8>;
         
@@ -129,8 +129,11 @@ impl Chip8 {
             0x0000 => {
                 match self.opcode & 0x0FFF {
                     0x00E0 => {
-                        todo!();
-                        // self.pc += 2;
+                        for gfx_index in 0..GFX_SIZE {
+                            self.gfx[gfx_index] = 0;
+                        }
+                        self.draw_sema = true;
+                        self.pc += 2;
                     }
 
                     0x00EE => {
@@ -383,7 +386,7 @@ impl Chip8 {
                 for y_coord in 0..height {
                     let pixel: u8 = self.memory[(self.i + (y_coord as i16)) as usize];
                     for x_coord in 0..8 {
-                        let gfx_index: usize = x + x_coord + ((y + y_coord) * 64);
+                        let gfx_index: usize = (self.v[x] as usize) + x_coord + (((self.v[y] as usize) + y_coord) * 64);
                         if (pixel & (0x80 >> x_coord)) != 0 {
                             if self.gfx[gfx_index] == 1 {
                                 self.v[VREGISTER_COUNT - 1] = 1;
@@ -399,8 +402,36 @@ impl Chip8 {
 
             0xE000 => {
                 //Key Ops
-                // self.pc += 2;
-                todo!();
+                match self.opcode & 0x00FF {
+
+                    0x009E => {
+                        //EX9E
+                        //Skips the next instruction if the key store in VX is pressed. 
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        if self.key[self.v[x] as usize] == 0 {
+                            self.pc += 2;
+                        } else {
+                            self.pc += 4;
+                        } 
+                        
+                    }
+
+                    0x00A1 => {
+                        //EXA1
+                        //Skips the next instruction if the key stored in VX isn't pressed. 
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        if self.key[self.v[x] as usize] == 0 {
+                            self.pc += 4;
+                        } else {
+                            self.pc += 2;
+                        } 
+                    }
+
+                    _=> {
+                        unimplemented!();
+                    }
+
+                }
             }
 
             0xF000 => {
@@ -418,8 +449,8 @@ impl Chip8 {
                     0x000A => {
                         //FX0A
                         //A key press is awaited, and the stored in VX. (Blocking Operation)
-                        // self.pc += 2;
-                        todo!();
+                        self.pc += 2;
+                        // todo!();
                     }
 
                     0x0015 => {
@@ -476,8 +507,14 @@ impl Chip8 {
                     }
 
                     0x0055 => {
-                        // self.pc += 2;
-                        todo!();
+                        //FX55
+                        //Stores V0 to VX (including VX) in memory starting at address I. The offset from I
+                        //is increased by 1 for each value written, but I itself is left unmodified. 
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        for reg_index in 0..(x + 1) {
+                            self.memory[(self.i as usize) + reg_index] = self.v[reg_index];
+                        }
+                        self.pc += 2;
                     }
 
                     0x0065 => {
