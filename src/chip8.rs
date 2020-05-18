@@ -89,7 +89,7 @@ impl Chip8 {
     */
     pub fn load(&mut self) {
 
-        let path_to_program: String = String::from("src/programs/PONG");
+        let path_to_program: String = String::from("src/programs/PONG2");
 
         let buffer: Vec<u8>;
         
@@ -115,7 +115,7 @@ impl Chip8 {
     pub fn emulate_cycle(&mut self) {
         
         //to slow down cycles for now
-        std::thread::sleep(std::time::Duration::from_millis(40));
+        // std::thread::sleep(std::time::Duration::from_millis(40));
 
         // fetch opcode by combining two consecutive addresses in memory
         self.opcode = (self.memory[self.pc as usize] as u16) << 8 | (self.memory[(self.pc + 1) as usize] as u16);
@@ -129,8 +129,8 @@ impl Chip8 {
             0x0000 => {
                 match self.opcode & 0x0FFF {
                     0x00E0 => {
-                        // todo!();
-                        self.pc += 2;
+                        todo!();
+                        // self.pc += 2;
                     }
 
                     0x00EE => {
@@ -399,7 +399,8 @@ impl Chip8 {
 
             0xE000 => {
                 //Key Ops
-                self.pc += 2;
+                // self.pc += 2;
+                todo!();
             }
 
             0xF000 => {
@@ -417,7 +418,8 @@ impl Chip8 {
                     0x000A => {
                         //FX0A
                         //A key press is awaited, and the stored in VX. (Blocking Operation)
-                        self.pc += 2;
+                        // self.pc += 2;
+                        todo!();
                     }
 
                     0x0015 => {
@@ -454,18 +456,38 @@ impl Chip8 {
                     }
 
                     0x0029 => {
+                        //FX29
+                        //Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal)
+                        //are represented by a 4x5 font. 
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        self.i = (self.v[x] * 5) as i16;
                         self.pc += 2;
                     }
 
                     0x0033 => {
+                        //FX33 
+                        //Stores the binary-coded decimal representation of VX, with the most significant
+                        //of three digits a the adress in I, the middle digit at I plus 1, and the least significant digit at I plus 2. 
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        self.memory[self.i as usize] = self.v[x] / 100;
+                        self.memory[(self.i + 1) as usize] = (self.v[x] / 10) % 10; 
+                        self.memory[(self.i + 2) as usize] = (self.v[x] % 100) % 10; 
                         self.pc += 2;
                     }
 
                     0x0055 => {
-                        self.pc += 2;
+                        // self.pc += 2;
+                        todo!();
                     }
 
                     0x0065 => {
+                        //FX65
+                        //Fills V0 to VX (including VX) with values from memory starting at address I. The offset from I
+                        //is increased by 1 for each value written, but I itself is left unmodified. 
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        for reg_index in 0..(x + 1) {
+                            self.v[reg_index] = self.memory[(self.i as usize) + reg_index];
+                        }
                         self.pc += 2;
                     }
 
