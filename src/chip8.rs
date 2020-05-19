@@ -1,8 +1,10 @@
 
-use std::vec::Vec;
 
 extern crate rand;
+extern crate sdl2; 
+
 use rand::Rng;
+use std::vec::Vec;
 
 const MEMORY_SIZE: usize = 4096;
 const VREGISTER_COUNT: usize = 16;
@@ -18,6 +20,7 @@ pub struct Chip8 {
     pc: u16,
     gfx: [u8;GFX_SIZE],
     draw_sema: bool,
+    key_sema: bool,
     delay_timer: u8,
     sound_timer: u8,
     stack: [u16;STACK_SIZE],
@@ -37,6 +40,7 @@ impl Chip8 {
             pc: 0x0000,
             gfx: [0;GFX_SIZE],
             draw_sema: false,
+            key_sema: false,
             delay_timer: 0x00,
             sound_timer: 0x00,
             stack: [0;STACK_SIZE],
@@ -70,6 +74,11 @@ impl Chip8 {
             self.v[i] = 0x00;
         }
 
+        // Clear key
+        for i in 0..KEY_SIZE {
+            self.key[i] = 0;
+        }
+
         // Clear memory
         for i in 0..MEMORY_SIZE {
             self.memory[i] = 0x00;
@@ -87,9 +96,9 @@ impl Chip8 {
     /*
         Load program for cpu to run
     */
-    pub fn load(&mut self) {
+    pub fn load(&mut self, path_to_program: String) {
 
-        let path_to_program: String = String::from("src/programs/INVADERS");
+        // let path_to_program: String = String::from("src/programs/INVADERS");
 
         let buffer: Vec<u8>;
         
@@ -121,7 +130,7 @@ impl Chip8 {
         self.opcode = (self.memory[self.pc as usize] as u16) << 8 | (self.memory[(self.pc + 1) as usize] as u16);
 
         //for debugging
-        println!("pc: {}, opcode: {:#x}", self.pc, self.opcode);
+        println!("pc: {}, opcode: {:#x}, v[9]: {}, key[5]: {}", self.pc, self.opcode, self.v[9], self.key[5]);
 
         // decode opcode (TODO: CLEAN UP UGLY SWITCH STATEMENT)
         match self.opcode & 0xF000 {
@@ -427,7 +436,7 @@ impl Chip8 {
                     }
 
                     _=> {
-                        unimplemented!();
+                        panic!("opcode: {:#x?} not found!", self.opcode);
                     }
 
                 }
@@ -447,9 +456,11 @@ impl Chip8 {
 
                     0x000A => {
                         //FX0A
-                        //A key press is awaited, and the stored in VX. (Blocking Operation)
+                        //A key press is awaited, and then stored in VX. (Blocking Operation)
+                        let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
+                        self.key_sema = true;
                         self.pc += 2;
-                        // todo!();
+                        // panic!("LOOK!");
                     }
 
                     0x0015 => {
@@ -549,11 +560,27 @@ impl Chip8 {
     pub fn get_gfx(&self) -> [u8;GFX_SIZE] {
         self.gfx
     }
+
+    pub fn update_keystate(&mut self, key: &[u8;KEY_SIZE]) {
+        self.key = *key;
+    }
+
+    pub fn set_register_to_keypress(&mut self, vreg_index: usize, key_index: u8) {
+        self.v[vreg_index] = key_index;
+    }
     
     pub fn check_draw_sema(&mut self) -> bool {
         if self.draw_sema == true {
             self.draw_sema = false;
             return true
+        }
+        false
+    }
+
+    pub fn check_key_sema(&mut self) -> bool {
+        if self.key_sema == true {
+            self.key_sema = false;
+            return true;
         }
         false
     }
@@ -580,4 +607,25 @@ const CHIP8_FONTSET: [u8;80] =
   0xE0, 0x90, 0x90, 0x90, 0xE0, // D
   0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
   0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+];
+
+//ascii mappings
+const KEY_MAPPING: [u8;16] = 
+[
+    0x30, // 0
+    0x31, // 1
+    0x32, // 2
+    0x33, // 3
+    0x34, // 4
+    0x35, // 5
+    0x36, // 6 
+    0x37, // 7
+    0x38, // 8
+    0x39, // 9
+    0x61, // a
+    0x62, // b
+    0x63, // c
+    0x64, // d
+    0x65, // e
+    0x66  // f
 ];

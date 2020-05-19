@@ -6,7 +6,7 @@ fn main() {
 
     let mut cpu = chip8::Chip8::new();
     cpu.initialize();
-    cpu.load();
+    cpu.load(String::from("src/programs/PONG2"));
 
     let mut app = app::App::new();
     app.render();
@@ -18,6 +18,11 @@ fn main() {
             app.update(&cpu.get_gfx());
             app.render();
         }
+
+        // if cpu.check_key_sema() {
+        //     println!("key pressed was: {}", app.await_keypress());
+        // }
+        cpu.update_keystate(&app.get_keystate());
     }
 
 }
