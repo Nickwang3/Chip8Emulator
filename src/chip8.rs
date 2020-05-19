@@ -332,8 +332,7 @@ impl Chip8 {
                     }
 
                     _=> {
-                        println!("opcode: {:#x?} not found!", self.opcode);
-                        self.pc += 2;
+                        panic!("opcode: {:#x?} not found!", self.opcode);
                     }
                 }
             }
@@ -529,15 +528,13 @@ impl Chip8 {
                     }
 
                     _=> {
-                        println!("opcode: {:#x?} not found!", self.opcode);
+                        panic!("opcode: {:#x?} not found!", self.opcode);
                     }
                 }
             }
 
             _ => {
-                println!("opcode: {:#x?} not found!", self.opcode);
-                // for debugging before all opcodes are implemented
-                self.pc += 2;
+                panic!("opcode: {:#x?} not found!", self.opcode);
             }
         }
 

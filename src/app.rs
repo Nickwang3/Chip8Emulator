@@ -42,7 +42,10 @@ impl App {
         for y_coord in 0..32 {
             for x_coord in 0..64 {
                 if self.gfx[x_coord + (y_coord * 64)] == 1 {
-                    self.canvas.fill_rect(Rect::new((x_coord * 10) as i32, (y_coord * 10) as i32, 10, 10));
+                    match self.canvas.fill_rect(Rect::new((x_coord * 10) as i32, (y_coord * 10) as i32, 10, 10)) {
+                        Err(e) => panic!("Error drawing to canvas: {}", e),
+                        _=>()
+                    }
                 }
             }
         }
