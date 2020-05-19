@@ -6,7 +6,7 @@ fn main() {
 
     let mut cpu = chip8::Chip8::new();
     cpu.initialize();
-    cpu.load(String::from("src/programs/PONG2"));
+    cpu.load(String::from("src/programs/UFO"));
 
     let mut app = app::App::new();
     app.render();

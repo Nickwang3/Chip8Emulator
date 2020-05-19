@@ -501,7 +501,7 @@ impl Chip8 {
                         //Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal)
                         //are represented by a 4x5 font. 
                         let x: usize = ((self.opcode & 0x0F00) >> 8) as usize;
-                        self.i = (self.v[x] * 5) as i16;
+                        self.i = (self.v[x] * 5 + 80) as i16;
                         self.pc += 2;
                     }
 
